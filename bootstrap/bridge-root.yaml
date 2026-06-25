@@ -5,11 +5,11 @@
 # management cluster. It watches apps/ and manages every component Application
 # (MetalLB, …) from there.
 #
-# repoURL is the __GITOPS_REPO_URL__ placeholder, substituted by the installer at
-# seed time before this file is pushed to the in-cluster Gitea mirror. Production
-# default is the Gitea mirror (air-gap safe):
-#   http://gitea-http.gitea.svc.cluster.local:3000/platform/bridge-gitops.git
-# For a dev/local apply, substitute the GitHub repo URL by hand first.
+# repoURL: currently set to the GitHub repo for dev/testing (direct kubectl apply).
+# For the production / installer-seeded flow, restore the placeholder below so the
+# installer substitutes it at seed time before pushing to the in-cluster Gitea mirror:
+#   repoURL: __GITOPS_REPO_URL__
+#   (production default = http://gitea-http.gitea.svc.cluster.local:3000/platform/bridge-gitops.git , air-gap safe)
 #
 # Apply once, after ArgoCD is Healthy:
 #   kubectl apply -f bootstrap/bridge-root.yaml
@@ -21,7 +21,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: __GITOPS_REPO_URL__
+    repoURL: https://github.com/abhilash-armada-ai/argo-gitops.git
     targetRevision: main
     path: apps
     directory:
