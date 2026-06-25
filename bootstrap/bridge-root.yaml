@@ -1,0 +1,35 @@
+---
+# bridge-root — App-of-Apps for the BRIDGE (management) cluster.
+#
+# The ONLY resource applied manually/by Ansible, once, to bootstrap GitOps on the
+# management cluster. It watches apps/ and manages every component Application
+# (MetalLB, …) from there.
+#
+# __GITOPS_REPO_URL__ is substituted by the installer at seed time. Default
+# (production / air-gap) points at the in-cluster Gitea mirror:
+#   http://gitea-http.gitea.svc.cluster.local:3000/platform/bridge-gitops.git
+#
+# Apply once (Ansible, after ArgoCD is Healthy):
+#   kubectl apply -f bootstrap/bridge-root.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: bridge-root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: __GITOPS_REPO_URL__
+    targetRevision: main
+    path: apps
+    directory:
+      recurse: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
