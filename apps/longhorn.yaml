@@ -1,0 +1,83 @@
+---
+# Longhorn — distributed block storage (default StorageClass). sync-wave 0.
+# Chart: https://charts.longhorn.io  version 1.11.2 (= installer longhorn_version)
+# Standalone (single-node) values, mirrored from the installer's
+# templates/charts/longhorn/values.yaml (amcop_image_registry -> docker.io).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: longhorn
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: default
+  source:
+    repoURL: https://charts.longhorn.io
+    chart: longhorn
+    targetRevision: 1.11.2
+    helm:
+      values: |
+        defaultSettings:
+          defaultReplicaCount: 1
+          storageReservedPercentageForDefaultDisk: 10
+        persistence:
+          defaultClassReplicaCount: 1
+          defaultClass: true
+        csi:
+          attacherReplicaCount: 1
+          provisionerReplicaCount: 1
+          resizerReplicaCount: 1
+          snapshotterReplicaCount: 1
+        longhornUI:
+          replicas: 1
+        global:
+          imageRegistry: docker.io
+          imagePullSecrets:
+            - name: armada-registry
+        image:
+          longhorn:
+            manager:
+              registry: docker.io
+              repository: amcop/longhorn-manager
+            engine:
+              registry: docker.io
+              repository: amcop/longhorn-engine
+            ui:
+              registry: docker.io
+              repository: amcop/longhorn-ui
+            instanceManager:
+              registry: docker.io
+              repository: amcop/longhorn-instance-manager
+            shareManager:
+              registry: docker.io
+              repository: amcop/longhorn-share-manager
+          csi:
+            attacher:
+              registry: docker.io
+              repository: amcop/csi-attacher
+            provisioner:
+              registry: docker.io
+              repository: amcop/csi-provisioner
+            resizer:
+              registry: docker.io
+              repository: amcop/csi-resizer
+            snapshotter:
+              registry: docker.io
+              repository: amcop/csi-snapshotter
+            nodeDriverRegistrar:
+              registry: docker.io
+              repository: amcop/csi-node-driver-registrar
+            livenessProbe:
+              registry: docker.io
+              repository: amcop/livenessprobe
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: longhorn-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
