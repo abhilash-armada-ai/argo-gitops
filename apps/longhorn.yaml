@@ -18,6 +18,13 @@ spec:
     targetRevision: 1.11.2
     helm:
       values: |
+        # Disable the pre-upgrade hook Job. ArgoCD runs Helm pre-upgrade hooks as
+        # PreSync on every sync (incl. first install), before longhorn-service-account
+        # and its RBAC exist, so the hook deadlocks and fails the whole sync. The
+        # checker is an upgrade-time guard with no purpose on a fresh GitOps install;
+        # Git-pinned chart versions cover upgrade control.
+        preUpgradeChecker:
+          jobEnabled: false
         defaultSettings:
           defaultReplicaCount: 1
           storageReservedPercentageForDefaultDisk: 10
