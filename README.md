@@ -35,10 +35,17 @@ skew (same pattern as `platform_catalog_source_branch` for the catalog).
 ```
 argo-gitops/
 ├── bootstrap/
-│   └── bridge-root.yaml        # App-of-Apps. Applied once by Ansible after ArgoCD is up.
-└── apps/                       # one ArgoCD Application per component (watched by bridge-root)
-    └── metallb.yaml            # MetalLB chart (sync-wave 1)
+│   └── bridge-root.yaml        # App-of-Apps. Applied once after ArgoCD is up.
+├── apps/                       # one ArgoCD Application per component (watched by bridge-root)
+│   └── metallb.yaml            # MetalLB chart, multi-source (sync-wave 1)
+└── values/                     # Helm values files, referenced by apps/* via the $values ref
+    └── metallb.yaml
 ```
+
+> `apps/` is scanned by `bridge-root` as manifests to apply (`recurse: false`), so
+> values files must live **outside** it — hence the top-level `values/` dir.
+> Component Applications use a **multi-source** spec to combine a remote Helm chart
+> with a values file from this repo (`valueFiles: [$values/values/<name>.yaml]`).
 
 > The MetalLB `IPAddressPool` / `L2Advertisement` (runtime `cluster_lb_ip`) is
 > intentionally **not** managed here yet — it stays in Ansible (installer Task 19)

@@ -1,13 +1,6 @@
 ---
-# MetalLB — L2 load balancer (chart). sync-wave 1: installs the controller,
-# speaker, and the IPAddressPool/L2Advertisement CRDs. The pool CRs themselves
-# are applied by apps/metallb-config.yaml at wave 2 (after these CRDs exist).
-#
+# MetalLB — L2 load balancer. sync-wave 1.
 # Chart: https://metallb.github.io/metallb  version 0.15.3 (= installer metallb_version)
-#
-# Images default to docker.io/amcop/* (non-airgap). In air-gap, the installer
-# overrides the registry at seed time (Harbor OCI). Keep this file registry-static;
-# do not embed Jinja2.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:

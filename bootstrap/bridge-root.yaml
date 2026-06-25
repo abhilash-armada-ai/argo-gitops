@@ -5,11 +5,13 @@
 # management cluster. It watches apps/ and manages every component Application
 # (MetalLB, …) from there.
 #
-# __GITOPS_REPO_URL__ is substituted by the installer at seed time. Default
-# (production / air-gap) points at the in-cluster Gitea mirror:
+# repoURL is the __GITOPS_REPO_URL__ placeholder, substituted by the installer at
+# seed time before this file is pushed to the in-cluster Gitea mirror. Production
+# default is the Gitea mirror (air-gap safe):
 #   http://gitea-http.gitea.svc.cluster.local:3000/platform/bridge-gitops.git
+# For a dev/local apply, substitute the GitHub repo URL by hand first.
 #
-# Apply once (Ansible, after ArgoCD is Healthy):
+# Apply once, after ArgoCD is Healthy:
 #   kubectl apply -f bootstrap/bridge-root.yaml
 apiVersion: argoproj.io/v1alpha1
 kind: Application
