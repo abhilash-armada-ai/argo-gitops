@@ -1,0 +1,35 @@
+---
+# Grafana dashboards — ConfigMaps generated via kustomize from dashboards/grafana/.
+# Loaded by the kube-prometheus-stack Grafana sidecar (label grafana_dashboard: "1").
+#
+# sync-wave 3: runs AFTER prometheus-stack (wave 2). bridge-root will not sync this
+# Application until the prometheus-stack Application is Healthy — i.e. Grafana is up.
+# (Strictly the sidecar would load these whenever they exist, but the wave makes the
+# "after Grafana" ordering explicit.)
+#
+# repoURL: GitHub for dev/testing, matching bootstrap/bridge-root.yaml. For the
+# installer-seeded flow, switch to the Gitea mirror placeholder:
+#   repoURL: __GITOPS_REPO_URL__
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-dashboards
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/abhilash-armada-ai/argo-gitops.git
+    targetRevision: main
+    path: dashboards/grafana
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prometheus
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

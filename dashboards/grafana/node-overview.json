@@ -1,0 +1,589 @@
+{
+  "title": "Node Overview",
+  "uid": "node-overview",
+  "description": "Compact node overview: CPU/RAM gauges and CPU, Memory, Network, Disk trends",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "links": [],
+  "schemaVersion": 36,
+  "version": 1,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "browser",
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "text": "mimir",
+          "value": "mimir"
+        },
+        "includeAll": false,
+        "label": "datasource",
+        "name": "DS_PROMETHEUS",
+        "options": [],
+        "query": "prometheus",
+        "refresh": 1,
+        "regex": "",
+        "type": "datasource"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(node_uname_info{tenant_id=~\"$tenant_id\"}, job)",
+        "includeAll": false,
+        "label": "Job",
+        "name": "job",
+        "options": [],
+        "query": "label_values(node_uname_info{tenant_id=~\"$tenant_id\"}, job)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(node_uname_info{tenant_id=~\"$tenant_id\", job=\"$job\"}, instance)",
+        "includeAll": false,
+        "label": "Host:",
+        "name": "node",
+        "options": [],
+        "query": "label_values(node_uname_info{tenant_id=~\"$tenant_id\", job=\"$job\"}, instance)",
+        "refresh": 1,
+        "regex": "",
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "label": "Tenant ID",
+        "name": "tenant_id",
+        "options": [],
+        "query": "",
+        "current": {
+          "value": "",
+          "text": ""
+        },
+        "type": "textbox"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "CPU Busy",
+      "description": "Busy state of all CPU cores together",
+      "type": "gauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "rgba(50, 172, 45, 0.97)", "value": null },
+              { "color": "rgba(237, 129, 40, 0.89)", "value": 85 },
+              { "color": "rgba(245, 54, 54, 0.9)", "value": 95 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "(((count(count(node_cpu_seconds_total{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}) by (cpu))) - avg(sum by (mode)(irate(node_cpu_seconds_total{mode='idle',instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])))) * 100) / count(count(node_cpu_seconds_total{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}) by (cpu))",
+          "legendFormat": "",
+          "instant": false
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Sys Load (5m avg)",
+      "description": "System load average over 5 minutes as a percentage of CPU count",
+      "type": "gauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "rgba(50, 172, 45, 0.97)", "value": null },
+              { "color": "rgba(237, 129, 40, 0.89)", "value": 85 },
+              { "color": "rgba(245, 54, 54, 0.9)", "value": 95 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "avg(node_load5{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}) / count(count(node_cpu_seconds_total{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}) by (cpu)) * 100",
+          "legendFormat": "",
+          "instant": false
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Sys Load (15m avg)",
+      "description": "System load average over 15 minutes as a percentage of CPU count",
+      "type": "gauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "rgba(50, 172, 45, 0.97)", "value": null },
+              { "color": "rgba(237, 129, 40, 0.89)", "value": 85 },
+              { "color": "rgba(245, 54, 54, 0.9)", "value": 95 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "avg(node_load15{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}) / count(count(node_cpu_seconds_total{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}) by (cpu)) * 100",
+          "legendFormat": "",
+          "instant": false
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "RAM Used",
+      "description": "Percentage of RAM currently in use",
+      "type": "gauge",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "decimals": 0,
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "unit": "percent",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "rgba(50, 172, 45, 0.97)", "value": null },
+              { "color": "rgba(237, 129, 40, 0.89)", "value": 80 },
+              { "color": "rgba(245, 54, 54, 0.9)", "value": 90 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "100 - ((node_memory_MemAvailable_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"} * 100) / node_memory_MemTotal_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"})",
+          "legendFormat": "",
+          "instant": false
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "CPU",
+      "description": "CPU usage broken down by mode across all cores",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode=\"system\",instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])) * 100",
+          "legendFormat": "System - Processes executing in kernel mode"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode='user',instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])) * 100",
+          "legendFormat": "User - Normal processes executing in user mode"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode='nice',instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])) * 100",
+          "legendFormat": "Nice - Niced processes executing in user mode"
+        },
+        {
+          "refId": "D",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode='idle',instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])) * 100",
+          "legendFormat": "Idle - Waiting for something to happen"
+        },
+        {
+          "refId": "E",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode='iowait',instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])) * 100",
+          "legendFormat": "Iowait - Waiting for I/O to complete"
+        },
+        {
+          "refId": "F",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode='irq',instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])) * 100",
+          "legendFormat": "Irq - Servicing interrupts"
+        },
+        {
+          "refId": "G",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode='softirq',instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])) * 100",
+          "legendFormat": "Softirq - Servicing softirqs"
+        },
+        {
+          "refId": "H",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode='steal',instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])) * 100",
+          "legendFormat": "Steal - Time in other OSes (virtualised)"
+        },
+        {
+          "refId": "I",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "sum by (mode)(irate(node_cpu_seconds_total{mode='guest',instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m])) * 100",
+          "legendFormat": "Guest - Running a virtual CPU for a guest OS"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Memory Stack",
+      "description": "Memory usage broken down by category (stacked)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 50,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "normal" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_memory_MemTotal_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"} - node_memory_MemFree_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"} - node_memory_Buffers_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"} - node_memory_Cached_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"} - node_memory_Slab_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"} - node_memory_PageTables_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"} - node_memory_SwapCached_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "Apps"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_memory_PageTables_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "PageTables"
+        },
+        {
+          "refId": "C",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_memory_SwapCached_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "SwapCache"
+        },
+        {
+          "refId": "D",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_memory_Slab_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "Slab"
+        },
+        {
+          "refId": "E",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_memory_Cached_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "Cache"
+        },
+        {
+          "refId": "F",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_memory_Buffers_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "Buffers"
+        },
+        {
+          "refId": "G",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_memory_MemFree_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "Unused"
+        },
+        {
+          "refId": "H",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_memory_SwapTotal_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"} - node_memory_SwapFree_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "Swap"
+        },
+        {
+          "refId": "I",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_memory_HardwareCorrupted_bytes{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "Hardware Corrupted"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "title": "Network Traffic",
+      "description": "Network receive and transmit throughput per interface",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "unit": "bps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "irate(node_network_receive_bytes_total{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m]) * 8",
+          "legendFormat": "{{device}} - Receive"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "irate(node_network_transmit_bytes_total{instance=\"$node\",job=\"$job\",tenant_id=~\"$tenant_id\"}[5m]) * 8",
+          "legendFormat": "{{device}} - Transmit"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "Disk Space Used",
+      "description": "Disk space consumed per mount point",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "options": {
+        "tooltip": { "mode": "multi", "sort": "none" },
+        "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "unit": "bytes",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+          "expr": "node_filesystem_size_bytes{instance=\"$node\",job=\"$job\",device!~'rootfs',tenant_id=~\"$tenant_id\"} - node_filesystem_avail_bytes{instance=\"$node\",job=\"$job\",device!~'rootfs',tenant_id=~\"$tenant_id\"}",
+          "legendFormat": "{{mountpoint}}"
+        }
+      ]
+    }
+  ]
+}

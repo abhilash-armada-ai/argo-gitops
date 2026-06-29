@@ -1,0 +1,53 @@
+# Grafana dashboards — rendered into ConfigMaps the kube-prometheus-stack
+# Grafana sidecar (amcop/k8s-sidecar) auto-loads. Mirrors installer Task 21.
+#
+# All ConfigMaps land in the `prometheus` namespace and carry the
+# `grafana_dashboard: "1"` label the sidecar watches for. Names are kept stable
+# (disableNameSuffixHash) so they match the installer's grafana-dashboard-<name>.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: prometheus
+
+generatorOptions:
+  disableNameSuffixHash: true
+  labels:
+    grafana_dashboard: "1"
+
+configMapGenerator:
+  - name: grafana-dashboard-nvidia-gpu-metrics
+    files:
+      - nvidia-gpu-metrics.json=nvidia-gpu-metrics.json
+  - name: grafana-dashboard-events
+    files:
+      - events.json=events.json
+  - name: grafana-dashboard-node-exporter
+    files:
+      - node-exporter.json=node-exporter-12486.json
+  - name: grafana-dashboard-amd-instinct
+    files:
+      - amd-instinct.json=amd-instinct-23434.json
+  - name: grafana-dashboard-switch-dashboard
+    files:
+      - switch-dashboard.json=switch-dashboard.json
+  - name: grafana-dashboard-llm-dashboard
+    files:
+      - llm-dashboard.json=llm-dashboard.json
+  - name: grafana-dashboard-llm-dashboard-minimal
+    files:
+      - llm-dashboard-minimal.json=llm-dashboard-minimal.json
+  - name: grafana-dashboard-k8s-dashboard-15661
+    files:
+      - k8s-dashboard-15661.json=k8s-dashboard-15661.json
+  - name: grafana-dashboard-kubernetes-views-global-15757
+    files:
+      - kubernetes-views-global-15757.json=kubernetes-views-global-15757.json
+  - name: grafana-dashboard-kubernetes-views-pods-15760
+    files:
+      - kubernetes-views-pods-15760.json=kubernetes-views-pods-15760.json
+  - name: grafana-dashboard-kubernetes-views-pods-per-node-15759
+    files:
+      - kubernetes-views-pods-per-node-15759.json=kubernetes-views-pods-per-node-15759.json
+  - name: grafana-dashboard-node-overview
+    files:
+      - node-overview.json=node-overview.json
