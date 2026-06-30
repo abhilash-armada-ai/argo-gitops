@@ -1,0 +1,63 @@
+---
+# All namespaces required by the bridge cluster's GitOps-managed components.
+# Applied by bridge-root before the component Applications sync.
+#
+# Mirrors the previous repo's apps/namespaces.yaml, EXCEPT the Longhorn
+# pre-upgrade ServiceAccount/RBAC block is intentionally omitted: the longhorn
+# app here disables that hook (preUpgradeChecker.jobEnabled: false), so the SA
+# is never needed. Each app also sets CreateNamespace=true as a safety net.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: amcop-system
+  labels:
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cert-manager
+  labels:
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kamaji-system
+  labels:
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: longhorn-system
+  labels:
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: metallb-system
+  labels:
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prometheus
+  labels:
+    app.kubernetes.io/managed-by: argocd
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: seaweedfs
+  labels:
+    app.kubernetes.io/managed-by: argocd
