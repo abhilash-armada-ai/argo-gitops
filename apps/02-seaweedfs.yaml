@@ -1,0 +1,91 @@
+---
+# SeaweedFS — S3-compatible object store (master + volume + filer). sync-wave 2.
+# Chart: https://seaweedfs.github.io/seaweedfs/helm  version 4.17.0 (= installer seaweedfs_version)
+# Values mirrored from the installer's templates/charts/seaweedfs/values.yaml (standalone)
+# with amcop_image_registry -> docker.io and runtime values hardcoded to defaults:
+#   seaweedfs_pvc_size -> 50Gi ; seaweedfss3_host_bridge -> seaweedfss3.bridge.armada.ai
+#
+# Scope: chart only (installer Task 156). The chart auto-generates the S3 credentials
+# Secret `seaweedfs-s3-secret` (pre-install hook, helm resource-policy: keep) in this
+# namespace. Reading it and copying creds into amcop-system's
+# `seaweedfs-model-registry-credentials` (installer Tasks 156a/156b/157) stays
+# Ansible-owned for now — ArgoCD has no native cross-namespace secret copy. Move to
+# ESO/Vault later per the README migration recipe.
+#
+# Notes:
+#  - Needs block storage (Longhorn, wave 0) for its PVCs.
+#  - The `armada-registry` imagePullSecret in this namespace is Ansible-seeded
+#    (namespace_setup.yaml), as for every other component here.
+#  - The S3 Ingress uses className: nginx; ingress-nginx is Ansible-installed and not
+#    in gitops yet, so the Ingress applies but is not served until nginx exists.
+#  - Buckets mimir-blocks / mimir-ruler / loki-chunks back Mimir + Loki (observability),
+#    which are not in gitops yet.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: seaweedfs
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: https://seaweedfs.github.io/seaweedfs/helm
+    chart: seaweedfs
+    targetRevision: 4.17.0
+    helm:
+      values: |
+        global:
+          registry: docker.io
+          imageName: amcop/seaweedfs
+          imagePullSecrets:
+            - name: armada-registry
+        master:
+          data:
+            type: "persistentVolumeClaim"
+            size: "1Gi"
+            storageClass: ""
+        volume:
+          dataDirs:
+            - name: data1
+              type: "persistentVolumeClaim"
+              size: 50Gi
+              storageClass: ""
+              maxVolumes: 0
+        filer:
+          data:
+            type: "persistentVolumeClaim"
+            size: "5Gi"
+            storageClass: ""
+          s3:
+            enabled: true
+            enableAuth: true
+            createBuckets:
+              - name: mimir-blocks
+                anonymousRead: false
+              - name: mimir-ruler
+                anonymousRead: false
+              - name: loki-chunks
+                anonymousRead: false
+        s3:
+          ingress:
+            enabled: true
+            className: nginx
+            host: "seaweedfss3.bridge.armada.ai"
+            path: /
+            pathType: Prefix
+            annotations:
+              nginx.ingress.kubernetes.io/proxy-body-size: "0"
+              nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+              nginx.ingress.kubernetes.io/rewrite-target: /
+              nginx.ingress.kubernetes.io/use-forwarded-headers: "true"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: seaweedfs
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

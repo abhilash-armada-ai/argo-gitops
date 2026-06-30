@@ -1,0 +1,66 @@
+---
+# Kamaji — hosted control-plane manager (controller + bundled kamaji-etcd). sync-wave 2.
+# Chart: PRIVATE GitLab package-registry Helm repo (installer helm_repo + /kamaji),
+#   version 2025.7.28 (= installer kamaji_version). This is the Aarna-repackaged chart,
+#   NOT upstream clastix — there is no public chart source.
+#
+# repoURL is a SEED-TIME PLACEHOLDER. The installer substitutes it before pushing to
+# Gitea, the same pattern as bootstrap/bridge-root.yaml's __GITOPS_REPO_URL__:
+#   __KAMAJI_HELM_REPO_URL__  ->  gitlab_helm_repo_base
+#       = https://gitlab.com/api/v4/projects/<project_id>/packages/helm/<channel>
+#         (channel = stable when docker_repo=amcop, else devel)
+# Authentication: the Ansible-seeded `gitlab-helm-repo` repo-creds Secret in the argocd
+# namespace (installer Task 127) matches this URL by prefix — no extra repo secret here.
+#
+# NOTE — dev/testing: unlike the public-chart apps, there is no GitHub/dev shortcut. To
+# sync this app the placeholder must be substituted AND ArgoCD must have reachable creds
+# for the private repo. In a pure dev bridge-root (pointed at GitHub) this app will not
+# sync until that URL is filled in.
+#
+# Image: amcop_image_registry -> docker.io (repo convention). VERIFY docker.io/amcop/
+# aarna-kamaji:2025-07-20 is pullable in your target; if not, override the registry.
+#
+# Scope: controller chart only (installer Task 28). The CAPI control-plane-provider
+# wiring — CAPI operator, provider manifests (kamaji.yaml ControlPlaneProvider),
+# DataStore CRs, hostAliases patches, Harbor seeding, readiness waits — is NOT here.
+# This yields a running Kamaji controller but no tenant control planes until that
+# (much larger, runtime/airgap-coupled) flow is migrated too.
+#
+# Dependencies: cert-manager (wave 1, webhook TLS) and Longhorn (wave 0, etcd PVCs).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kamaji
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+  source:
+    repoURL: __KAMAJI_HELM_REPO_URL__
+    chart: kamaji
+    targetRevision: 2025.7.28
+    helm:
+      values: |
+        imagePullSecrets:
+          - name: armada-registry
+        image:
+          repository: docker.io/amcop/aarna-kamaji
+          tag: "2025-07-20"
+          pullPolicy: IfNotPresent
+        resources:
+          limits:
+            memory: 500Mi
+        kamaji-etcd:
+          imagePullSecrets:
+            - name: armada-registry
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kamaji-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
