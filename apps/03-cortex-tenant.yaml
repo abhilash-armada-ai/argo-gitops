@@ -1,0 +1,62 @@
+---
+# cortex-tenant — tenant proxy in front of Mimir's push endpoint. sync-wave 3.
+# Chart: https://blind-oracle.github.io/cortex-tenant  version 0.8.1 (= installer cortex_tenant_version)
+# Mirrored from the installer's templates/charts/cortex-tenant/values.yaml (Task 44a, non-HA)
+# with amcop_image_registry -> docker.io.
+#
+# Notes:
+#  - Alloy (wave 3) remote-writes metrics to cortex-tenant.observability:8080; this
+#    proxy forwards them to Mimir's distributor (mimir-distributor.observability:8080).
+#  - Mimir itself is still Ansible-managed (deferred from gitops), so the `target`
+#    below resolves only once Mimir is up.
+#  - Namespace observability is Ansible-seeded with the armada-registry pull secret.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cortex-tenant
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: https://blind-oracle.github.io/cortex-tenant
+    chart: cortex-tenant
+    targetRevision: 0.8.1
+    helm:
+      values: |
+        replicas: 1
+
+        image:
+          repository: docker.io/amcop/cortex-tenant
+          tag: "v2.0.0"
+          pullSecrets:
+            - armada-registry
+
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            memory: 512Mi
+
+        config:
+          listen: 0.0.0.0:8080
+          listen_pprof: ""
+          target: http://mimir-distributor.observability.svc.cluster.local:8080/api/v1/push
+          concurrency: 250
+          max_conns_per_host: 32
+          tenant:
+            label: tenant_id
+            label_remove: false
+            default: fake
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true

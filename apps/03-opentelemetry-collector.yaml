@@ -1,0 +1,109 @@
+---
+# OpenTelemetry Collector — OTLP receiver → Prometheus exporter. sync-wave 3.
+# Chart: https://open-telemetry.github.io/opentelemetry-helm-charts
+#        opentelemetry-collector 0.146.1 (= installer opentelemetry_collector_version)
+# Mirrored from the installer's templates/charts/opentelemetry-collector/values.yaml
+# (Task 91) with amcop_image_registry -> docker.io.
+#
+# Notes:
+#  - Deployed in the prometheus namespace (matches the installer's deploy_namespace).
+#  - The `debug` exporter referenced in the metrics pipeline comes from the chart's
+#    default config (merged), as in the installer.
+#  - Namespace prometheus is Ansible-seeded with the armada-registry pull secret.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: opentelemetry-collector
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  project: default
+  source:
+    repoURL: https://open-telemetry.github.io/opentelemetry-helm-charts
+    chart: opentelemetry-collector
+    targetRevision: 0.146.1
+    helm:
+      values: |
+        mode: deployment
+        replicaCount: 1
+
+        imagePullSecrets:
+          - name: armada-registry
+
+        image:
+          repository: docker.io/amcop/opentelemetry-collector-contrib
+
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 256Mi
+
+        ports:
+          otlp:
+            enabled: true
+            containerPort: 4317
+            servicePort: 4317
+            protocol: TCP
+          otlp-http:
+            enabled: true
+            containerPort: 4318
+            servicePort: 4318
+            protocol: TCP
+          prometheus:
+            enabled: true
+            containerPort: 8889
+            servicePort: 8889
+            protocol: TCP
+
+        config:
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                  endpoint: "0.0.0.0:4317"
+                http:
+                  endpoint: "0.0.0.0:4318"
+
+          processors:
+            batch: {}
+
+          exporters:
+            prometheus:
+              endpoint: "0.0.0.0:8889"
+
+          service:
+            pipelines:
+              metrics:
+                receivers: [otlp]
+                processors: [batch]
+                exporters: [prometheus, debug]
+
+        service:
+          enabled: true
+
+        podSecurityContext:
+          seccompProfile:
+            type: RuntimeDefault
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 10001
+          runAsGroup: 10001
+          capabilities:
+            drop:
+              - ALL
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: prometheus
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
